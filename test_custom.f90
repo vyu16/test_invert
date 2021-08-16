@@ -139,7 +139,7 @@ SUBROUTINE ZGETRI2(ndim,mat,lda,ipiv,work,lwork,info)
    !
    CALL ZTRTRI('U','N',ndim,mat,lda,info)
    !
-   DO jj = ndim,1,-1
+   DO jj = 1,ndim
       DO ii = jj+1,ndim
          work(ii+(jj-1)*ndim) = mat(ii,jj)
          mat(ii,jj) = zero
