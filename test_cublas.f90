@@ -29,7 +29,7 @@ SUBROUTINE test_cublas_real(ndim,mat)
    ALLOCATE(ipiv_d(ndim))
    ALLOCATE(work_d(ndim,ndim))
    !
-   mat_d = mat
+   mat_d(:,:) = mat
    !
    ierr = cublasCreate(cublas_h)
    ierr = cudaDeviceSynchronize()
@@ -46,7 +46,7 @@ SUBROUTINE test_cublas_real(ndim,mat)
    !
    CALL SYSTEM_CLOCK(t2)
    !
-   mat = work_d
+   mat(:,:) = work_d
    !
    PRINT *,"time3:",REAL(t2-t1)/REAL(cr)
    !
@@ -89,7 +89,7 @@ SUBROUTINE test_cublas_cmplx(ndim,mat)
    ALLOCATE(ipiv_d(ndim))
    ALLOCATE(work_d(ndim,ndim))
    !
-   mat_d = mat
+   mat_d(:,:) = mat
    !
    ierr = cublasCreate(cublas_h)
    ierr = cudaDeviceSynchronize()
@@ -106,7 +106,7 @@ SUBROUTINE test_cublas_cmplx(ndim,mat)
    !
    CALL SYSTEM_CLOCK(t2)
    !
-   mat = work_d
+   mat(:,:) = work_d
    !
    PRINT *,"time3:",REAL(t2-t1)/REAL(cr)
    !

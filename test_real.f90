@@ -36,8 +36,8 @@ PROGRAM test_invert_real
    !
    mat2(:,:) = mat1
    !
-   CALL test_lapack_real(ndim,mat1)
-!   CALL test_cusolver_real(ndim,mat2)
+   CALL test_cublas_real(ndim,mat1)
+   CALL test_custom_gpu_real(ndim,mat2)
    !
    PRINT *,"error:",MAXVAL(ABS(mat2-mat1))
    !

@@ -34,7 +34,7 @@ SUBROUTINE test_cusolver_real(ndim,mat)
    ALLOCATE(ipiv_d(ndim))
    ALLOCATE(work_d(lwork))
    !
-   mat_d = mat
+   mat_d(:,:) = mat
    !
    ierr = cudaDeviceSynchronize()
    !
@@ -50,8 +50,8 @@ SUBROUTINE test_cusolver_real(ndim,mat)
    DEALLOCATE(work)
    ALLOCATE(work(lwork))
    !
-   ipiv = ipiv_d
-   mat = mat_d
+   ipiv(:) = ipiv_d
+   mat(:,:) = mat_d
    !
    CALL DGETRI(ndim,mat,ndim,ipiv,work,lwork,ierr)
    !
@@ -105,7 +105,7 @@ SUBROUTINE test_cusolver_cmplx(ndim,mat)
    ALLOCATE(ipiv_d(ndim))
    ALLOCATE(work_d(lwork))
    !
-   mat_d = mat
+   mat_d(:,:) = mat
    !
    ierr = cudaDeviceSynchronize()
    !
@@ -121,8 +121,8 @@ SUBROUTINE test_cusolver_cmplx(ndim,mat)
    DEALLOCATE(work)
    ALLOCATE(work(lwork))
    !
-   ipiv = ipiv_d
-   mat = mat_d
+   ipiv(:) = ipiv_d
+   mat(:,:) = mat_d
    !
    CALL ZGETRI(ndim,mat,ndim,ipiv,work,lwork,ierr)
    !

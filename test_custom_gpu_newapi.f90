@@ -11,8 +11,11 @@ SUBROUTINE test_custom_gpu_real(ndim,mat)
    INTEGER, INTENT(IN) :: ndim
    REAL(DP), INTENT(INOUT) :: mat(ndim,ndim)
    !
-   INTEGER :: lwork
-   INTEGER :: lwork2
+   INTEGER(8) :: ndim_i8
+   INTEGER(8) :: lwork
+   INTEGER(8) :: lwork_d
+   INTEGER(8) :: lwork2
+   INTEGER(8) :: lwork2_d
    INTEGER :: ierr
    INTEGER :: ii
    INTEGER :: jj
@@ -21,28 +24,37 @@ SUBROUTINE test_custom_gpu_real(ndim,mat)
    INTEGER :: t1
    INTEGER :: t2
    INTEGER, DEVICE :: info_d
-   INTEGER, DEVICE, ALLOCATABLE :: piv_d(:)
-   !
+   INTEGER(8), DEVICE, ALLOCATABLE :: piv_d(:)
    REAL(DP) :: tmp
-   REAL(DP), DEVICE, ALLOCATABLE :: mat_d(:,:)
+   REAL(DP), ALLOCATABLE :: work(:)
    REAL(DP), DEVICE, ALLOCATABLE :: work_d(:)
+   REAL(DP), DEVICE, ALLOCATABLE :: mat_d(:,:)
    !
    REAL(DP), PARAMETER :: zero = 0._DP
    REAL(DP), PARAMETER :: one = 1._DP
    !
    TYPE(cusolverDnHandle) :: cusolver_h
+   TYPE(cusolverDnParams) :: cusolver_p
+   !
+   ndim_i8 = ndim
    !
    ierr = cusolverDnCreate(cusolver_h)
-   ierr = cusolverDnDgetrf_bufferSize(cusolver_h,ndim,ndim,mat_d,ndim,lwork)
-   ierr = cusolverDnDtrtri_buffersize(cusolver_h,CUBLAS_FILL_MODE_UPPER,&
-   & CUBLAS_DIAG_NON_UNIT,ndim,mat_d,ndim,lwork2)
+   ierr = cusolverDnCreateParams(cusolver_p)
    !
-   lwork = MAX(lwork,lwork2)
-   lwork = MAX(lwork,ndim**2)
+   ierr = cusolverDnXgetrf_bufferSize(cusolver_h,cusolver_p,ndim_i8,ndim_i8,&
+        & cudaDataType(CUDA_R_64F),mat_d,ndim_i8,cudaDataType(CUDA_R_64F),&
+        & lwork_d,lwork)
+   ierr = cusolverDnXtrtri_buffersize(cusolver_h,CUBLAS_FILL_MODE_UPPER,&
+        & CUBLAS_DIAG_NON_UNIT,ndim_i8,cudaDataType(CUDA_R_64F),mat_d,ndim_i8,&
+        & lwork2_d,lwork2)
    !
+   lwork = MAX(lwork,lwork2,8*ndim_i8**2)
+   lwork_d = MAX(lwork_d,lwork2_d,8*ndim_i8**2)
+   !
+   ALLOCATE(work(lwork/8))
+   ALLOCATE(work_d(lwork_d/8))
    ALLOCATE(mat_d(ndim,ndim))
    ALLOCATE(piv_d(ndim))
-   ALLOCATE(work_d(lwork))
    !
    mat_d(:,:) = mat
    !
@@ -51,9 +63,12 @@ SUBROUTINE test_custom_gpu_real(ndim,mat)
    CALL SYSTEM_CLOCK(COUNT_RATE=cr)
    CALL SYSTEM_CLOCK(t1)
    !
-   ierr = cusolverDnDgetrf(cusolver_h,ndim,ndim,mat_d,ndim,work_d,piv_d,info_d)
-   ierr = cusolverDnDtrtri(cusolver_h,CUBLAS_FILL_MODE_UPPER,&
-   & CUBLAS_DIAG_NON_UNIT,ndim,mat_d,ndim,work_d,lwork,info_d)
+   ierr = cusolverDnXgetrf(cusolver_h,cusolver_p,ndim_i8,ndim_i8,&
+        & cudaDataType(CUDA_R_64F),mat_d,ndim_i8,piv_d,&
+        & cudaDataType(CUDA_R_64F),work_d,lwork_d,work,lwork,info_d)
+   ierr = cusolverDnXtrtri(cusolver_h,CUBLAS_FILL_MODE_UPPER,&
+        & CUBLAS_DIAG_NON_UNIT,ndim_i8,cudaDataType(CUDA_R_64F),mat_d,ndim_i8,&
+        & work_d,lwork_d,work,lwork,info_d)
    !
    !$acc parallel loop collapse(2)
    DO jj = 1,ndim-1
@@ -92,10 +107,12 @@ SUBROUTINE test_custom_gpu_real(ndim,mat)
    !
    mat(:,:) = mat_d
    !
+   DEALLOCATE(work)
+   DEALLOCATE(work_d)
    DEALLOCATE(mat_d)
    DEALLOCATE(piv_d)
-   DEALLOCATE(work_d)
    !
+   ierr = cusolverDnDestroyParams(cusolver_p)
    ierr = cusolverDnDestroy(cusolver_h)
    !
 END SUBROUTINE
@@ -113,8 +130,11 @@ SUBROUTINE test_custom_gpu_cmplx(ndim,mat)
    INTEGER, INTENT(IN) :: ndim
    COMPLEX(DP), INTENT(INOUT) :: mat(ndim,ndim)
    !
-   INTEGER :: lwork
-   INTEGER :: lwork2
+   INTEGER(8) :: ndim_i8
+   INTEGER(8) :: lwork
+   INTEGER(8) :: lwork_d
+   INTEGER(8) :: lwork2
+   INTEGER(8) :: lwork2_d
    INTEGER :: ierr
    INTEGER :: ii
    INTEGER :: jj
@@ -123,28 +143,37 @@ SUBROUTINE test_custom_gpu_cmplx(ndim,mat)
    INTEGER :: t1
    INTEGER :: t2
    INTEGER, DEVICE :: info_d
-   INTEGER, DEVICE, ALLOCATABLE :: piv_d(:)
-   !
+   INTEGER(8), DEVICE, ALLOCATABLE :: piv_d(:)
    COMPLEX(DP) :: tmp
-   COMPLEX(DP), DEVICE, ALLOCATABLE :: mat_d(:,:)
+   COMPLEX(DP), ALLOCATABLE :: work(:)
    COMPLEX(DP), DEVICE, ALLOCATABLE :: work_d(:)
+   COMPLEX(DP), DEVICE, ALLOCATABLE :: mat_d(:,:)
    !
    COMPLEX(DP), PARAMETER :: zero = (0._DP,0._DP)
    COMPLEX(DP), PARAMETER :: one = (1._DP,0._DP)
    !
    TYPE(cusolverDnHandle) :: cusolver_h
+   TYPE(cusolverDnParams) :: cusolver_p
+   !
+   ndim_i8 = ndim
    !
    ierr = cusolverDnCreate(cusolver_h)
-   ierr = cusolverDnZgetrf_bufferSize(cusolver_h,ndim,ndim,mat_d,ndim,lwork)
-   ierr = cusolverDnZtrtri_buffersize(cusolver_h,CUBLAS_FILL_MODE_UPPER,&
-   & CUBLAS_DIAG_NON_UNIT,ndim,mat_d,ndim,lwork2)
+   ierr = cusolverDnCreateParams(cusolver_p)
    !
-   lwork = MAX(lwork,lwork2)
-   lwork = MAX(lwork,ndim**2)
+   ierr = cusolverDnXgetrf_bufferSize(cusolver_h,cusolver_p,ndim_i8,ndim_i8,&
+        & cudaDataType(CUDA_C_64F),mat_d,ndim_i8,cudaDataType(CUDA_C_64F),&
+        & lwork_d,lwork)
+   ierr = cusolverDnXtrtri_buffersize(cusolver_h,CUBLAS_FILL_MODE_UPPER,&
+        & CUBLAS_DIAG_NON_UNIT,ndim_i8,cudaDataType(CUDA_C_64F),mat_d,ndim_i8,&
+        & lwork2_d,lwork2)
    !
+   lwork = MAX(lwork,lwork2,16*ndim_i8**2)
+   lwork_d = MAX(lwork_d,lwork2_d,16*ndim_i8**2)
+   !
+   ALLOCATE(work(lwork/16))
+   ALLOCATE(work_d(lwork_d/16))
    ALLOCATE(mat_d(ndim,ndim))
    ALLOCATE(piv_d(ndim))
-   ALLOCATE(work_d(lwork))
    !
    mat_d(:,:) = mat
    !
@@ -153,9 +182,12 @@ SUBROUTINE test_custom_gpu_cmplx(ndim,mat)
    CALL SYSTEM_CLOCK(COUNT_RATE=cr)
    CALL SYSTEM_CLOCK(t1)
    !
-   ierr = cusolverDnZgetrf(cusolver_h,ndim,ndim,mat_d,ndim,work_d,piv_d,info_d)
-   ierr = cusolverDnZtrtri(cusolver_h,CUBLAS_FILL_MODE_UPPER,&
-   & CUBLAS_DIAG_NON_UNIT,ndim,mat_d,ndim,work_d,lwork,info_d)
+   ierr = cusolverDnXgetrf(cusolver_h,cusolver_p,ndim_i8,ndim_i8,&
+        & cudaDataType(CUDA_C_64F),mat_d,ndim_i8,piv_d,&
+        & cudaDataType(CUDA_C_64F),work_d,lwork_d,work,lwork,info_d)
+   ierr = cusolverDnXtrtri(cusolver_h,CUBLAS_FILL_MODE_UPPER,&
+        & CUBLAS_DIAG_NON_UNIT,ndim_i8,cudaDataType(CUDA_C_64F),mat_d,ndim_i8,&
+        & work_d,lwork_d,work,lwork,info_d)
    !
    !$acc parallel loop collapse(2)
    DO jj = 1,ndim-1
@@ -194,10 +226,12 @@ SUBROUTINE test_custom_gpu_cmplx(ndim,mat)
    !
    mat(:,:) = mat_d
    !
+   DEALLOCATE(work)
+   DEALLOCATE(work_d)
    DEALLOCATE(mat_d)
    DEALLOCATE(piv_d)
-   DEALLOCATE(work_d)
    !
+   ierr = cusolverDnDestroyParams(cusolver_p)
    ierr = cusolverDnDestroy(cusolver_h)
    !
 END SUBROUTINE

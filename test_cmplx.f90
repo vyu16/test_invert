@@ -40,8 +40,8 @@ PROGRAM test_invert_cmplx
    mat1(:,:) = CMPLX(temp-1,temp+1,KIND=DP)
    mat2(:,:) = mat1
    !
-   CALL test_lapack_cmplx(ndim,mat1)
-!   CALL test_cusolver_cmplx(ndim,mat2)
+   CALL test_cublas_cmplx(ndim,mat1)
+   CALL test_custom_gpu_cmplx(ndim,mat2)
    !
    PRINT *,"error:",MAXVAL(ABS(mat2-mat1))
    !
